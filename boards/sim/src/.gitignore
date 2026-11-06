@@ -1,0 +1,4 @@
+/etctmp*
+sim_appinit.c
+sim_bringup.c
+sim.h

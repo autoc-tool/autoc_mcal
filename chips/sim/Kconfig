@@ -1,0 +1,23 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+menu "sim chip Support"
+config ARCH_CHIP_CUSTOM_SEMIDRIVE_SIM
+	bool "sim semidrive processor"
+	default y
+	select ARCH_HAVE_IRQTRIGGER
+	select HRTIMER
+
+config SYS_CLOCK_HW_CYCLES_PER_SEC
+	int "system clock frequency"
+	default 24000000
+	---help---
+		The system clock frequency in general is used to trigger system tick
+
+config ARCH_CHIP_E3650
+	bool "E3650 Processor (Cortex-r52)"
+	---help---
+		The config is used to adapt e3650 compiler.
+endmenu

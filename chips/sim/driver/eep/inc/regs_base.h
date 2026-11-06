@@ -1,0 +1,16 @@
+#ifndef REGS_BASE_H
+#define REGS_BASE_H
+
+#define MRAM1_F_BASE (0x08000000ul)
+#define MRAM2_F_BASE (0x08400000ul)
+#define MRAM3_F_BASE (0x08800000ul)
+#define MRAM4_F_BASE (0x08C00000ul)
+#define MRAM5_F_BASE (0x09000000ul)
+
+#define APB_MRAM1_BASE (0xF8640000ul)
+#define APB_MRAM2_BASE (0xF8650000ul)
+#define APB_MRAM3_BASE (0xF8660000ul)
+#define APB_MRAM4_BASE (0xF8670000ul)
+#define APB_MRAM5_BASE (0xF0570000ul)
+
+#endif

@@ -1,0 +1,6 @@
+config MODULE_CAN
+	bool "PC MCAL CAN (EcuBus-Pro JSON-RPC)"
+	default n
+	---help---
+		AUTOSAR Can driver for PC. Talks to EcuBus-Pro Simulate CAN
+		over JSON-RPC. Lives under vcos/components/autoc_mcal/Can.

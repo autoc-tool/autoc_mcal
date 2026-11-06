@@ -390,18 +390,25 @@ Std_ReturnType Can_RpcInitFromConfig(const Can_ConfigType *config)
 	off = (uint32)n;
 	for (i = 0u; i < config->controller_count; i++) {
 		const Can_ControllerConfigType *c = &config->controllers[i];
+		/*
+		 * controllerId is the EcuBus handle, the same id later calls pass as
+		 * "controller" and the same id hardware objects already emit. The
+		 * AUTOSAR controller index (often 0) is not that id. Omitting it makes
+		 * EcuBus open simulate-<handle> as a different controller than the HOHs.
+		 */
 		if ((c->canfd == TRUE) && (c->fd_bitrate_bps > 0u)) {
 			n = snprintf(params + off, sizeof(params) - off,
-				     "%s{\"vendor\":\"simulate\",\"handle\":%u,\"name\":\"%s\",\"canfd\":true,"
+				     "%s{\"vendor\":\"simulate\",\"handle\":%u,\"controllerId\":%u,\"name\":\"%s\",\"canfd\":true,"
 				     "\"bitrate\":{\"freq\":%u},\"bitratefd\":{\"freq\":%u}}",
-				     (i == 0u) ? "" : ",", (unsigned)c->handle, rpc_cstr(c->hardware_name),
-				     (unsigned)c->bitrate_bps, (unsigned)c->fd_bitrate_bps);
+				     (i == 0u) ? "" : ",", (unsigned)c->handle, (unsigned)c->handle,
+				     rpc_cstr(c->hardware_name), (unsigned)c->bitrate_bps, (unsigned)c->fd_bitrate_bps);
 		} else {
 			n = snprintf(params + off, sizeof(params) - off,
-				     "%s{\"vendor\":\"simulate\",\"handle\":%u,\"name\":\"%s\",\"canfd\":%s,"
+				     "%s{\"vendor\":\"simulate\",\"handle\":%u,\"controllerId\":%u,\"name\":\"%s\",\"canfd\":%s,"
 				     "\"bitrate\":{\"freq\":%u}}",
-				     (i == 0u) ? "" : ",", (unsigned)c->handle, rpc_cstr(c->hardware_name),
-				     (c->canfd == TRUE) ? "true" : "false", (unsigned)c->bitrate_bps);
+				     (i == 0u) ? "" : ",", (unsigned)c->handle, (unsigned)c->handle,
+				     rpc_cstr(c->hardware_name), (c->canfd == TRUE) ? "true" : "false",
+				     (unsigned)c->bitrate_bps);
 		}
 		if ((n < 0) || ((off + (uint32)n) >= sizeof(params))) {
 			return E_NOT_OK;

@@ -1,17 +1,5 @@
-﻿# ##############################################################################
-# vendor/ecubus/components/Can/CMakeLists.txt
-#
-# Copyright (c) 2025 Li Auto Inc. and its affiliates
-# Licensed under the Apache License, Version 2.0(the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#     http://www.apache.org/licenses/LICENSE-2.0
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+# ##############################################################################
+# components/autoc_mcal/Can/CMakeLists.txt
 # ##############################################################################
 
 if(CONFIG_MODULE_CAN)
@@ -28,6 +16,7 @@ if(CONFIG_MODULE_CAN)
 
     set(INCLUDE_DIRS
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
+        ${CMAKE_CURRENT_SOURCE_DIR}/host
         ${NUTTX_APPS_DIR}/components/include
         ${NUTTX_APPS_DIR}/components/include/autosar
         ${NUTTX_APPS_DIR}/components/rt_framework/inc
@@ -43,5 +32,11 @@ if(CONFIG_MODULE_CAN)
 
     if(WIN32)
         target_link_libraries(pc_can_driver PRIVATE ws2_32)
+    endif()
+
+    # Host socket wrappers (not renamed by nuttx.rel symbol remap).
+    if(NOT WIN32 AND TARGET nuttx)
+        target_sources(nuttx PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/host/can_rpc_nx_host.c)
+        target_include_directories(nuttx PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/host)
     endif()
 endif()

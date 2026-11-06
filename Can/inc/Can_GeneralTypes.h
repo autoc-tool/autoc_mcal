@@ -17,7 +17,7 @@
 #define CAN_GENERAL_TYPES_H
 
 #include "Std_Types.h"
-#include "ComStack_Types.h"
+#include "comstack_types.h"
 
 typedef uint32 Can_IdType;
 typedef uint16 Can_HwHandleType;
@@ -58,5 +58,21 @@ typedef struct {
 #ifndef CAN_BUSY
 #define CAN_BUSY ((Std_ReturnType)2u)
 #endif
+
+
+typedef enum { CANTRCV_TRCVMODE_NORMAL = 0U, CANTRCV_TRCVMODE_STANDBY, CANTRCV_TRCVMODE_SLEEP } CanTrcv_TrcvModeType;
+
+typedef enum { CANTRCV_WUMODE_ENABLE = 0U, CANTRCV_WUMODE_DISABLE, CANTRCV_WUMODE_CLEAR } CanTrcv_TrcvWakeupModeType;
+
+typedef enum {
+    CANTRCV_WU_ERROR = 0U,
+    CANTRCV_WU_NOT_SUPPORTED,
+    CANTRCV_WU_BY_BUS,
+    CANTRCV_WU_INTERNALLY,
+    CANTRCV_WU_RESET,
+    CANTRCV_WU_POWER_ON,
+    CANTRCV_WU_BY_PIN,
+    CANTRCV_WU_BY_SYSERR
+} CanTrcv_TrcvWakeupReasonType;
 
 #endif /* CAN_GENERAL_TYPES_H */

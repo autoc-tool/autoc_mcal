@@ -39,9 +39,10 @@ typedef SOCKET can_rpc_sock_t;
 #include <sys/un.h>
 #include <time.h>
 #include <unistd.h>
+#include "can_rpc_host.h"
 typedef int can_rpc_sock_t;
 #define CAN_RPC_INVALID_SOCK (-1)
-#define can_rpc_close(s) close(s)
+#define can_rpc_close(s) can_rpc_host_close(s)
 #endif
 
 #define CAN_RPC_REQ_MAX 16384u
@@ -102,11 +103,11 @@ static Std_ReturnType rpc_connect_tcp(const char *host, uint16 port)
 	if (rpc_wsa_init() != E_OK) {
 		return E_NOT_OK;
 	}
-	g_sock = socket(AF_INET, SOCK_STREAM, 0);
+	g_sock = can_rpc_host_socket(AF_INET, SOCK_STREAM, 0);
 	if (g_sock == CAN_RPC_INVALID_SOCK) {
 		return E_NOT_OK;
 	}
-	(void)setsockopt(g_sock, IPPROTO_TCP, TCP_NODELAY, (const char *)&one, sizeof(one));
+	(void)can_rpc_host_setsockopt(g_sock, IPPROTO_TCP, TCP_NODELAY, (const char *)&one, sizeof(one));
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
@@ -115,7 +116,7 @@ static Std_ReturnType rpc_connect_tcp(const char *host, uint16 port)
 		g_sock = CAN_RPC_INVALID_SOCK;
 		return E_NOT_OK;
 	}
-	if (connect(g_sock, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+	if (can_rpc_host_connect(g_sock, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
 		can_rpc_close(g_sock);
 		g_sock = CAN_RPC_INVALID_SOCK;
 		return E_NOT_OK;
@@ -131,14 +132,14 @@ static Std_ReturnType rpc_connect_unix(const char *path)
 	if ((path == NULL) || (path[0] == '\0')) {
 		return E_NOT_OK;
 	}
-	g_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	g_sock = can_rpc_host_socket(AF_UNIX, SOCK_STREAM, 0);
 	if (g_sock == CAN_RPC_INVALID_SOCK) {
 		return E_NOT_OK;
 	}
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
 	(void)snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", path);
-	if (connect(g_sock, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+	if (can_rpc_host_connect(g_sock, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
 		can_rpc_close(g_sock);
 		g_sock = CAN_RPC_INVALID_SOCK;
 		return E_NOT_OK;
@@ -232,7 +233,7 @@ Std_ReturnType Can_RpcCall(const char *method, const char *params_json, char *re
 		return E_NOT_OK;
 	}
 #else
-	if (write(g_sock, req, (size_t)n) != (ssize_t)n) {
+	if (can_rpc_host_write(g_sock, req, (size_t)n) != (ssize_t)n) {
 		rpc_fail_io();
 		return E_NOT_OK;
 	}
@@ -243,7 +244,7 @@ Std_ReturnType Can_RpcCall(const char *method, const char *params_json, char *re
 #ifdef _WIN32
 		r = recv(g_sock, resp + off, (int)(resp_sz - off - 1u), 0);
 #else
-		r = (int)read(g_sock, resp + off, resp_sz - off - 1u);
+		r = (int)can_rpc_host_read(g_sock, resp + off, resp_sz - off - 1u);
 #endif
 		if (r <= 0) {
 			rpc_fail_io();
@@ -389,18 +390,25 @@ Std_ReturnType Can_RpcInitFromConfig(const Can_ConfigType *config)
 	off = (uint32)n;
 	for (i = 0u; i < config->controller_count; i++) {
 		const Can_ControllerConfigType *c = &config->controllers[i];
+		/*
+		 * controllerId is the EcuBus handle, the same id later calls pass as
+		 * "controller" and the same id hardware objects already emit. The
+		 * AUTOSAR controller index (often 0) is not that id. Omitting it makes
+		 * EcuBus open simulate-<handle> as a different controller than the HOHs.
+		 */
 		if ((c->canfd == TRUE) && (c->fd_bitrate_bps > 0u)) {
 			n = snprintf(params + off, sizeof(params) - off,
-				     "%s{\"vendor\":\"simulate\",\"handle\":%u,\"name\":\"%s\",\"canfd\":true,"
+				     "%s{\"vendor\":\"simulate\",\"handle\":%u,\"controllerId\":%u,\"name\":\"%s\",\"canfd\":true,"
 				     "\"bitrate\":{\"freq\":%u},\"bitratefd\":{\"freq\":%u}}",
-				     (i == 0u) ? "" : ",", (unsigned)c->handle, rpc_cstr(c->hardware_name),
-				     (unsigned)c->bitrate_bps, (unsigned)c->fd_bitrate_bps);
+				     (i == 0u) ? "" : ",", (unsigned)c->handle, (unsigned)c->handle,
+				     rpc_cstr(c->hardware_name), (unsigned)c->bitrate_bps, (unsigned)c->fd_bitrate_bps);
 		} else {
 			n = snprintf(params + off, sizeof(params) - off,
-				     "%s{\"vendor\":\"simulate\",\"handle\":%u,\"name\":\"%s\",\"canfd\":%s,"
+				     "%s{\"vendor\":\"simulate\",\"handle\":%u,\"controllerId\":%u,\"name\":\"%s\",\"canfd\":%s,"
 				     "\"bitrate\":{\"freq\":%u}}",
-				     (i == 0u) ? "" : ",", (unsigned)c->handle, rpc_cstr(c->hardware_name),
-				     (c->canfd == TRUE) ? "true" : "false", (unsigned)c->bitrate_bps);
+				     (i == 0u) ? "" : ",", (unsigned)c->handle, (unsigned)c->handle,
+				     rpc_cstr(c->hardware_name), (c->canfd == TRUE) ? "true" : "false",
+				     (unsigned)c->bitrate_bps);
 		}
 		if ((n < 0) || ((off + (uint32)n) >= sizeof(params))) {
 			return E_NOT_OK;

@@ -315,7 +315,7 @@
                 "support": false,
                 "dynamic": false
             },
-            "plug_in_path": "../components/Can"
+            "plug_in_path": "../Can"
         },
         "CanIf": {
             "group": [
